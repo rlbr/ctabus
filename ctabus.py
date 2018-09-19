@@ -2,11 +2,10 @@ from urllib.parse import urlencode
 from requests import get
 import json
 import datetime
-import argparse
-from editdistance import eval as editdistance
 test = False
 test = True
-api = "***REMOVED***"
+with open('cta_api_key') as file:
+    api = file.read()
 
 def get_data(type,api_key = api,**args):
     base_url = "http://www.ctabustracker.com/bustime/api/v2/{type}?{query}"
@@ -33,12 +32,4 @@ def get_directions(route,api_key = api):
     
 def get_stops(route,direction,api_key = api):
     return get_data('getstops',api_key,rt = route,dir=direction)
-    
-if __name__ == "__main__":
-    if test:
-        data = get_times('4752')
-    else:
-        parser = argparse.ArgumentParser(prog = 'ctabus')
-        parser.add_argument('arg',metavar = 'stop-id | cross streets')
-        parser.add_argument('-r','--route')
-        parser.add_argument('-d','--direction')
+
