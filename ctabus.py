@@ -1,21 +1,37 @@
-from urllib import request
+from urllib.parse import urlencode
+from requests import get
 import json
 import datetime
-import saveto
-from timer import timer
-bus_timer = timer(t='Bus times',e=True,o=False,a=True)
-api = saveto.load('cta_api_key')
+import argparse
+test = False
+test = True
+api = "viCgbucwRPUTGAf4mZmsCNiDm"
+def get_data(type,api_key = api,**args):
+    base_url = "http://www.ctabustracker.com/bustime/api/v2/{type}?{query}"
+    args['key'] = api_key
+    args['format'] = 'json'
+    url = base_url.format(type = type,query = urlencode(args))
+    print(url)
+    input()
+    response = get(url)
+    data = json.loads(response.text)
+    return data['bustime-response']
+    # print(url)
+def print2d(values):
+	pass
 def get_times(stop_id,api_key = api):
-    url =  "http://www.ctabustracker.com/bustime/api/v2/getpredictions?key={api_key}&stpid={stop_id}&format=json".format(stop_id = stop_id,api_key = api)
-    data = json.load(request.urlopen(url))
-    times = list(map(lambda time: datetime.datetime.strptime(time['prdtm'],"%Y%m%d %H:%M"),data["bustime-response"]["prd"]))
-    return times
-walk = datetime.timedelta(seconds = 60*4)
-for i in range(6):
-    l = get_times(4752)
-    print(*map(lambda time: (str(time),str(time-walk)),l),sep = '\n',end = '\n\n')
-    try:
-        time = next(filter(bool,map(lambda time: time-walk if time-walk > datetime.datetime.today() else False,l)))
-        bus_timer(time)
-    except:
-        print("no times")
+    return get_data('getpredictions',api_key,stpid=stop_id)
+def get_routes(api_key = api):
+    return get_data('getroutes',api_key)
+def get_directions(route,api_key = api):
+    return get_data('getdirections',api_key,rt=route)
+def get_stops(route,direction,api_key = api):
+    return get_data('getstops',api_key,rt = route,dir=direction)
+if __name__ == "__main__":
+    if test:
+        data = get_times('4752')
+    else:
+        parser = argparse.ArgumentParser(prog = 'ctabus')
+        parser.add_argument('arg',metavar = 'stop-id | cross streets')
+        parser.add_argument('-r','--route')
+        parser.add_argument('-d','--direction')

@@ -1,3 +1,6 @@
 /cta_api_key.json
 __pycache__
 *.pyc
+*_out.json
+*.pdf
+*.bat
