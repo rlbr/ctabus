@@ -16,14 +16,15 @@ def print2d(l,datetime_format = "%A, %B %e, %Y %H:%M:%S",seperator= ' | ',spacer
             except IndexError:
                 max_col.append(len(col))
     
-    if l_end and r_end:
-        fmt_row = f'{l_end} {{content}} {r_end}'
-    else:
-        fmt_row = '{content}'
+    fmt_row = '{content}'
+    if l_end:
+        fmt_row = f'{l_end} ' + fmt_row
+    if r_end:
+        fmt_row = fmt_row + f' {r_end}'
     
     done = []
     for row in l:
-        content = seperator.join(col.ljust(max_col[i],spacer) for i,col in enumerate(row))
+        content = seperator.join(col.ljust(max_col[i],spacer if i < len(row)-1 or r_end else ' ') for i,col in enumerate(row))
         done.append(fmt_row.format(content = content))
     
     if bottom:
