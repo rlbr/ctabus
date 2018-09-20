@@ -1,9 +1,6 @@
 from urllib.parse import urlencode
 from requests import get
 import json
-import datetime
-test = False
-test = True
 with open('cta_api_key') as file:
     api = file.read()
 
@@ -17,10 +14,7 @@ def get_data(type,api_key = api,**args):
     response = get(url)
     data = json.loads(response.text)
     return data['bustime-response']
-    # print(url)
     
-def print2d(values):
-	pass
 def get_times(stop_id,api_key = api):
     return get_data('getpredictions',api_key,stpid=stop_id)
     
