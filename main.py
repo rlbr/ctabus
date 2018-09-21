@@ -80,7 +80,7 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
                 pass
         return ret
         
-config = '''{delta} ({t})
+config = '''{delta} ({t}) stop {stop_id}
 {route} - {end} ({direction})'''
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog = 'ctabus')
