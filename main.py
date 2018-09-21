@@ -1,11 +1,10 @@
-# from argparse import parser
+import argparse
 from print2d import print2d
 import re
-# parser = argparse.ArgumentParser(prog = 'ctabus')
-# parser.add_argument('arg',metavar = 'stop-id | cross streets')
-# parser.add_argument('-r','--route',default = None)
-# parser.add_argument('-d','--direction',default = None)
-# args = parser.parse_args()
+import ctabus
+from dateutil.parser import parse as date_parse
+import datetime
+from search import Search,StopSearch
 def numb_sort(str):
     n = 40
     try:
@@ -13,6 +12,33 @@ def numb_sort(str):
     except Exception as E:
         print(str)
         raise E
+    
+def pprint_delta(delta):
+    delta = str(delta)
+    days= None
+    s1 = delta.split(', ')
+    if len(s1) > 1:
+        days,time = s1
+    else:
+        time = s1[0]
+    time = time.split('.')[0]
+    hour,minute,second = map(int,time.split(':'))
+    time = ''
+    if hour:
+        time += f'{hour} hour' + ('s' if hour != 1 else '')
+    if minute:
+        if time and not time.endswith(', '):
+            time += ', '
+        time += f'{minute} minute' + ('s' if minute != 1 else '')
+    if second:
+        if time and not time.endswith(', '):
+            time += ', '
+        time += f'{second} second' + ('s' if second != 1 else '')
+    ret = ''
+    if days:
+        ret = days + ', ' if time else ''
+    ret += time
+    return ret
     
 def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
     k = displays[sort]
@@ -23,7 +49,7 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
         [
             [obj[d] for d in displays] for obj in objs
         ],
-        key = lambda row: key(row[sort])
+        key = lambda row: key(row[sort]) if key else row[sort]
     )
     if num_pic:
         display = [[i] + data for i,data in enumerate(display)]
@@ -54,11 +80,45 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
                 pass
         return ret
         
-
+config = '''{delta} ({t})
+{route} - {end} ({direction})'''
 if __name__ == "__main__":
-    import json
-    with open('stops_out.json') as file:
-        d= json.load(file)
-
-    d = d['stops']
-    print(gen_list(d,'stpid','stpnm',key=numb_sort,num_pic=True))
+    parser = argparse.ArgumentParser(prog = 'ctabus')
+    parser.add_argument('arg',nargs = '+',metavar = '(stop-id | cross streets)')
+    parser.add_argument('-r','--route',default = None)
+    parser.add_argument('-d','--direction',default = None)
+    args = parser.parse_args()
+    args.arg = ' '.join(args.arg)
+    print(args)
+    if not args.arg.isdecimal():
+        #routes
+        if not args.route:
+            data = ctabus.get_routes()['routes']
+            route = gen_list(data,'rt','rt','rtnm',num_pic = False,key=numb_sort)
+        else:
+            route = args.route
+        data = ctabus.get_directions(route)['directions']
+        #direction
+        if not args.direction:
+            direction = gen_list(data,'dir','dir')
+        else:
+            s = Search(args.direction)
+            direction = sorted((obj['dir'] for obj in data),key = s)[0]
+        #direction
+        stops = ctabus.get_stops(route,direction)['stops']
+        s = StopSearch(args.arg)
+        stop_id = gen_list(stops,'stpid','stpnm',key = s)
+    else:
+        stop_id = args.arg
+    times = ctabus.get_times(stop_id)['prd']
+    today = datetime.datetime.today()
+    for time in times:
+        arrival = date_parse(time['prdtm'])
+        delta = pprint_delta(arrival-today)
+        t = arrival.strftime('%H:%M:%S')
+        route = time['rt']
+        direction = time['rtdir']
+        end = time['des']
+        print(
+            config.format(**globals()),end= '\n'*2
+        )
