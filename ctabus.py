@@ -9,11 +9,13 @@ def get_data(type,api_key = api,**args):
     args['key'] = api_key
     args['format'] = 'json'
     url = base_url.format(type = type,query = urlencode(args))
-    print(url)
-    input()
     response = get(url)
-    data = json.loads(response.text)
-    return data['bustime-response']
+    data = json.loads(response.text)['bustime-response']
+    try:
+        data['error']
+        raise Exception(str(data["error"]))
+    except KeyError:
+        return data
     
 def get_times(stop_id,api_key = api):
     return get_data('getpredictions',api_key,stpid=stop_id)

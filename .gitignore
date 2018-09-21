@@ -1,5 +1,6 @@
 /cta_api_key
 /output
+/test.py
 __pycache__
 *.pyc
 *_out.json

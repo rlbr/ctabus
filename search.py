@@ -1,8 +1,19 @@
 from editdistance import eval as editdistance
 import re
 import json
-class StopSearch:
+class Search:
     def __init__(self,query):
+        self.raw_lower = query.lower()
+    def __call__(self,arg):
+        arg = arg.lower()
+        return editdistance(self.raw_lower,arg)
+    def __str__(self):
+        print(self.raw_lower)
+    def __repr__(self):
+        return str(self)
+class StopSearch(Search):
+    def __init__(self,query):
+        super().__init__(query)
         query = query.lower()
         parts = re.split(r' ?(?:(?<!\w)and(?!\w)|&) ?',query)
         self.query = ' & '.join(parts)
@@ -22,8 +33,7 @@ class StopSearch:
             )
     def __str__(self):
         return '{}|{}'.format(self.query,self.query_reversed)
-    def __repr__(self):
-        return str(self)
+
 if __name__ == "__main__":
     with open('stops_out.json') as file:
         data = json.load(file)
