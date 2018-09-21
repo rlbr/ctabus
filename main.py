@@ -89,7 +89,6 @@ if __name__ == "__main__":
     parser.add_argument('-d','--direction',default = None)
     args = parser.parse_args()
     args.arg = ' '.join(args.arg)
-    print(args)
     if not args.arg.isdecimal():
         #routes
         if not args.route:
