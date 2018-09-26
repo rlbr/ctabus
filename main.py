@@ -114,7 +114,7 @@ if __name__ == "__main__":
         stop_id = args.arg
     times = ctabus.get_times(stop_id)['prd']
     today = datetime.datetime.today()
-    for time in times:
+    for time in sorted(times,key = lambda t: t["prdtm"]):
         arrival = date_parse(time['prdtm'])
         delta = pprint_delta(arrival-today)
         t = arrival.strftime('%H:%M:%S')
