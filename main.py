@@ -80,8 +80,11 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
                 pass
         return ret
         
-config = '''{delta} ({t}) stop {stop_id}
-{route} - {end} ({direction})'''
+config = '''\
+{route} - {end} ({direction})
+{nm}, stop {stop_id}
+{delta} ({t})\
+'''
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog = 'ctabus')
     parser.add_argument('arg',nargs = '+',metavar = '(stop-id | cross streets)')
@@ -118,6 +121,7 @@ if __name__ == "__main__":
         route = time['rt']
         direction = time['rtdir']
         end = time['des']
+        nm = time['stpnm']
         print(
             config.format(**globals()),end= '\n'*2
         )

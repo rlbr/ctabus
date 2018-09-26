@@ -36,6 +36,8 @@ def print2d(l,datetime_format = "%A, %B %e, %Y %H:%M:%S",seperator= ' | ',spacer
     if bottom:
         final = '\n'.join((bottom,final,bottom))
     if interactive:
+        if not bottom:
+            final += '\n'
         pager(final)
     else:
         return final
