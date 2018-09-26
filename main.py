@@ -12,7 +12,7 @@ def numb_sort(str):
     except Exception as E:
         print(str)
         raise E
-    
+
 def pprint_delta(delta):
     delta = str(delta)
     days= None
@@ -39,7 +39,7 @@ def pprint_delta(delta):
         ret = days + ', ' if time else ''
     ret += time
     return ret
-    
+
 def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
     k = displays[sort]
     display_data = {obj[k]:obj[data] for obj in objs}
@@ -53,7 +53,7 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
     )
     if num_pic:
         display = [[i] + data for i,data in enumerate(display)]
-    
+
     opts = {
         'spacer':' ',
         'seperator':' ',
@@ -79,7 +79,7 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
             except KeyError:
                 pass
         return ret
-        
+
 config = '''\
 {route} - {end} ({direction})
 {nm}, stop {stop_id}
@@ -90,6 +90,7 @@ if __name__ == "__main__":
     parser.add_argument('arg',nargs = '+',metavar = '(stop-id | cross streets)')
     parser.add_argument('-r','--route',default = None)
     parser.add_argument('-d','--direction',default = None)
+    parser.add_argument('-l','--lucky',action='store_true',help = 'picks first result')
     args = parser.parse_args()
     args.arg = ' '.join(args.arg)
     if not args.arg.isdecimal():
@@ -109,7 +110,10 @@ if __name__ == "__main__":
         #direction
         stops = ctabus.get_stops(route,direction)['stops']
         s = StopSearch(args.arg)
-        stop_id = gen_list(stops,'stpid','stpnm',key = s)
+        if args.lucky:
+            stop_id = sorted(stops,key=lambda stop: s(stop['stpnm']))[0]['stpid']
+        else:
+            stop_id = gen_list(stops,'stpid','stpnm',key = s)
     else:
         stop_id = args.arg
     times = ctabus.get_times(stop_id)['prd']

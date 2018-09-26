@@ -28,6 +28,8 @@ class StopSearch(Search):
         if paren:
             paren = paren.group('data')
             ret.append(editdistance(self.query,paren))
+        if self.raw_lower in stop:
+            ret = (item - 100 for item in ret)
         return min(
                 ret
             )
@@ -40,4 +42,4 @@ if __name__ == "__main__":
         names = [stop['stpnm'] for stop in data['stops']]
     while True:
         q = StopSearch(input('Search: '))
-        print('\n'.join(sorted(names,key=q)))
+        print('\n'.join(sorted(names,key=q)),end='\n'*3)
