@@ -1,5 +1,5 @@
 from urllib.parse import urlencode
-from requests import get
+from urllib.request import urlopen
 import json
 import os.path as osp
 with open(osp.join(osp.dirname(__file__),'cta_api_key')) as file:
@@ -10,8 +10,8 @@ def get_data(type,api_key = api,**args):
     args['key'] = api_key
     args['format'] = 'json'
     url = base_url.format(type = type,query = urlencode(args))
-    response = get(url)
-    data = json.loads(response.text)['bustime-response']
+    response = urlopen(url)
+    data = json.load(response)['bustime-response']
     try:
         data['error']
         raise Exception(str(data["error"]))
