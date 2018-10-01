@@ -4,6 +4,8 @@ import re
 import ctabus
 from dateutil.parser import parse as date_parse
 import datetime
+import sys
+import os.path as osp
 from search import Search,StopSearch
 def numb_sort(str):
     n = 40
@@ -92,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument('-d','--direction',default = None)
     parser.add_argument('-l','--lucky',action='store_true',help = 'picks first result')
     args = parser.parse_args()
+    sys.stderr = open(osp.join(osp.dirname(__file__),'stderr.log'),'w')
     args.arg = ' '.join(args.arg)
     if not args.arg.isdecimal():
         #routes

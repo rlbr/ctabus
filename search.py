@@ -1,4 +1,6 @@
-from editdistance import eval as editdistance
+import edlib
+def editdistance(a,b):
+	return edlib.align(a,b)['editDistance']
 import re
 import json
 class Search:
