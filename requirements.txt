@@ -1,3 +1,2 @@
 edlib
-requests
 python-dateutil
