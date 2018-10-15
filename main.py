@@ -99,8 +99,7 @@ if __name__ == "__main__":
     if not args.arg.isdecimal():
         # save on import time slightly
         from print2d import print2d
-        if any(arg for arg in (args.route,args.direction)):
-            from search import Search,StopSearch
+        from search import Search,StopSearch
         #routes
         if not args.route:
             data = ctabus.get_routes()['routes']
