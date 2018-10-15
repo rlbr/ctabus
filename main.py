@@ -127,12 +127,13 @@ if __name__ == "__main__":
     today = datetime.datetime.today()
     for time in sorted(times,key = lambda t: t["prdtm"]):
         arrival = date_parse(time['prdtm'])
-        delta = pprint_delta(arrival-today)
-        t = arrival.strftime('%H:%M:%S')
-        route = time['rt']
-        direction = time['rtdir']
-        end = time['des']
-        nm = time['stpnm']
-        print(
-            config.format(**globals()),end= '\n'*2
-        )
+        if arrival > today:
+            delta = pprint_delta(arrival-today)
+            t = arrival.strftime('%H:%M:%S')
+            route = time['rt']
+            direction = time['rtdir']
+            end = time['des']
+            nm = time['stpnm']
+            print(
+                config.format(**globals()),end= '\n'*2
+            )
