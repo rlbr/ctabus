@@ -1,12 +1,11 @@
 import argparse
-from print2d import print2d
 import re
 import ctabus
 from dateutil.parser import parse as date_parse
 import datetime
+# for logging
 import sys
 import os.path as osp
-from search import Search,StopSearch
 def numb_sort(str):
     n = 40
     try:
@@ -96,7 +95,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     sys.stderr = open(osp.join(osp.dirname(__file__),'stderr.log'),'w')
     args.arg = ' '.join(args.arg)
+		
     if not args.arg.isdecimal():
+		# save on import time slightly
+		from print2d import print2d
+		if any(arg for arg in (args.route,args.direction)):
+			from search import Search,StopSearch
         #routes
         if not args.route:
             data = ctabus.get_routes()['routes']
