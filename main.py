@@ -68,7 +68,11 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
         which = None
         while not which:
             try:
-                which = srt_keys[int(input('Which one?: '))]
+                which = input('Which one?: ')
+            except KeyboardInterrupt:
+                quit()
+            try:
+                which = srt_keys[int(which)]
             except ValueError:
                 which = None
         return display_data[which]
