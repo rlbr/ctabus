@@ -18,9 +18,9 @@ def print2d(l,datetime_format = "%A, %B %e, %Y %H:%M:%S",seperator= ' | ',spacer
 
     fmt_row = '{content}'
     if l_end:
-        fmt_row = f'{l_end} ' + fmt_row
+        fmt_row = '{} {}'.format(l_end,fmt_row)
     if r_end:
-        fmt_row = fmt_row + f' {r_end}'
+        fmt_row = '{} {}'.format(fmt_row,r_end)
 
     done = []
     for row in l:

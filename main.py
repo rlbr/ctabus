@@ -95,7 +95,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     sys.stderr = open(osp.join(osp.dirname(__file__),'stderr.log'),'w')
     args.arg = ' '.join(args.arg)
-        
+
     if not args.arg.isdecimal():
         # save on import time slightly
         from print2d import print2d
