@@ -1,19 +1,27 @@
-import argparse
-from print2d import print2d
-import re
-import ctabus
 from dateutil.parser import parse as date_parse
+import argparse
+import ctabus
 import datetime
-import sys
+import os
+import re
+import time
+# for logging
 import os.path as osp
-from search import Search,StopSearch
-def numb_sort(str):
-    n = 40
-    try:
-        return re.sub(r'\d+',lambda match: match.group(0).rjust(n,'0'),str)
-    except Exception as E:
-        print(str)
-        raise E
+import sys
+import re
+
+# https://stackoverflow.com/a/5967539
+def atoi(text):
+    return int(text) if text.isdigit() else text
+def clearscr():
+    os.system('cls' if os.name == 'nt' else 'clear')
+def numb_sort(text):
+    '''
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    (See Toothy's implementation in the comments)
+    '''
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
 def pprint_delta(delta):
     delta = str(delta)
@@ -69,7 +77,11 @@ def gen_list(objs,data,*displays,key = None,sort = 0,num_pic = True):
         which = None
         while not which:
             try:
-                which = srt_keys[int(input('Which one?: '))]
+                which = input('Which one?: ')
+            except KeyboardInterrupt:
+                quit()
+            try:
+                which = srt_keys[int(which)]
             except ValueError:
                 which = None
         return display_data[which]
@@ -87,16 +99,39 @@ config = '''\
 {nm}, stop {stop_id}
 {delta} ({t})\
 '''
+def show(stop_id,rt_filter=None):
+    times = ctabus.get_times(stop_id)['prd']
+    today = datetime.datetime.today()
+    arrivals =  sorted(times,key = lambda t: t["prdtm"])
+    if rt_filter is not None:
+        arrivals =filter(lambda arrival: arrival['rt'] == rt_filter,arrivals)
+    for time in arrivals:
+        arrival = date_parse(time['prdtm'])
+        if arrival > today:
+            delta = pprint_delta(arrival-today)
+            t = arrival.strftime('%H:%M:%S')
+            route = time['rt']
+            direction = time['rtdir']
+            end = time['des']
+            nm = time['stpnm']
+            print(
+                config.format(**locals()),end= '\n'*2
+            )
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog = 'ctabus')
-    parser.add_argument('arg',nargs = '+',metavar = '(stop-id | cross streets)')
+    parser.add_argument('-l','--lucky',action='store_true',help = 'picks first result')
+    parser.add_argument('-p','--periodic',metavar = 'SEC',type=int,help='checks periodically')
     parser.add_argument('-r','--route',default = None)
     parser.add_argument('-d','--direction',default = None)
-    parser.add_argument('-l','--lucky',action='store_true',help = 'picks first result')
+    parser.add_argument('arg',nargs = '+',metavar = '(stop-id | cross streets)')
     args = parser.parse_args()
     sys.stderr = open(osp.join(osp.dirname(__file__),'stderr.log'),'w')
     args.arg = ' '.join(args.arg)
+
     if not args.arg.isdecimal():
+        # save on import time slightly
+        from print2d import print2d
+        from search import Search,StopSearch
         #routes
         if not args.route:
             data = ctabus.get_routes()['routes']
@@ -119,16 +154,14 @@ if __name__ == "__main__":
             stop_id = gen_list(stops,'stpid','stpnm',key = s)
     else:
         stop_id = args.arg
-    times = ctabus.get_times(stop_id)['prd']
-    today = datetime.datetime.today()
-    for time in sorted(times,key = lambda t: t["prdtm"]):
-        arrival = date_parse(time['prdtm'])
-        delta = pprint_delta(arrival-today)
-        t = arrival.strftime('%H:%M:%S')
-        route = time['rt']
-        direction = time['rtdir']
-        end = time['des']
-        nm = time['stpnm']
-        print(
-            config.format(**globals()),end= '\n'*2
-        )
+    if args.periodic is not None:
+        _done = False
+        while not _done:
+            try:
+                clearscr()
+                show(stop_id,args.route)
+                time.sleep(args.periodic)
+            except KeyboardInterrupt as e:
+                _done = True
+    else:
+        show(stop_id,args.route)
