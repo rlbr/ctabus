@@ -99,12 +99,14 @@ config = '''\
 {nm}, stop {stop_id}
 {delta} ({t})\
 '''
-def show(stop_id,rt_filter=None):
+def show(stop_id,rt_filter=None,_clear=False):
     times = ctabus.get_times(stop_id)['prd']
     today = datetime.datetime.today()
     arrivals =  sorted(times,key = lambda t: t["prdtm"])
     if rt_filter is not None:
         arrivals =filter(lambda arrival: arrival['rt'] == rt_filter,arrivals)
+    if _clear:
+        clearscr()
     for time in arrivals:
         arrival = date_parse(time['prdtm'])
         if arrival > today:
@@ -158,8 +160,7 @@ if __name__ == "__main__":
         _done = False
         while not _done:
             try:
-                clearscr()
-                show(stop_id,args.route)
+                show(stop_id,args.route,True)
                 time.sleep(args.periodic)
             except KeyboardInterrupt as e:
                 _done = True
