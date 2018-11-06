@@ -36,15 +36,15 @@ def pprint_delta(delta):
     hour,minute,second = map(int,time.split(':'))
     time = ''
     if hour:
-        time += f'{hour} hour' + ('s' if hour != 1 else '')
+        time += '{hour} hour'.format(hour=hour) + ('s' if hour != 1 else '')
     if minute:
         if time and not time.endswith(', '):
             time += ', '
-        time += f'{minute} minute' + ('s' if minute != 1 else '')
+        time += '{minute} minute'.format(minute=minute) + ('s' if minute != 1 else '')
     if second:
         if time and not time.endswith(', '):
             time += ', '
-        time += f'{second} second' + ('s' if second != 1 else '')
+        time += '{second} second'.format(second=second) + ('s' if second != 1 else '')
     ret = ''
     if days:
         ret = days + ', ' if time else ''
@@ -163,7 +163,7 @@ if __name__ == '__main__':
         _done = False
         while not _done:
             try:
-                show(data,args.route,False)
+                show(data,args.route,True)
                 s = time.perf_counter()
                 data = ctabus.get_times(stop_id)
                 e = time.perf_counter() - s
