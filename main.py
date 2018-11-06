@@ -13,8 +13,6 @@ import re
 # https://stackoverflow.com/a/5967539
 def atoi(text):
     return int(text) if text.isdigit() else text
-def clearscr():
-    os.system('cls' if os.name == 'nt' else 'clear')
 def numb_sort(text):
     '''
     alist.sort(key=natural_keys) sorts in human order
@@ -22,6 +20,9 @@ def numb_sort(text):
     (See Toothy's implementation in the comments)
     '''
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+
+def clearscr():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def pprint_delta(delta):
     delta = str(delta)
@@ -99,10 +100,10 @@ config = '''\
 {nm}, stop {stop_id}
 {delta} ({t})\
 '''
-def show(stop_id,rt_filter=None,_clear=False):
-    times = ctabus.get_times(stop_id)['prd']
+def show(data,rt_filter=None,_clear=False):
+    times = data['prd']
     today = datetime.datetime.today()
-    arrivals =  sorted(times,key = lambda t: t["prdtm"])
+    arrivals =  sorted(times,key = lambda t: t['prdtm'])
     if rt_filter is not None:
         arrivals =filter(lambda arrival: arrival['rt'] == rt_filter,arrivals)
     if _clear:
@@ -110,6 +111,7 @@ def show(stop_id,rt_filter=None,_clear=False):
     for time in arrivals:
         arrival = date_parse(time['prdtm'])
         if arrival > today:
+            stop_id = time['stpid']
             delta = pprint_delta(arrival-today)
             t = arrival.strftime('%H:%M:%S')
             route = time['rt']
@@ -119,7 +121,7 @@ def show(stop_id,rt_filter=None,_clear=False):
             print(
                 config.format(**locals()),end= '\n'*2
             )
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog = 'ctabus')
     parser.add_argument('-l','--lucky',action='store_true',help = 'picks first result')
     parser.add_argument('-p','--periodic',metavar = 'SEC',type=int,help='checks periodically')
@@ -156,13 +158,18 @@ if __name__ == "__main__":
             stop_id = gen_list(stops,'stpid','stpnm',key = s)
     else:
         stop_id = args.arg
+    data = ctabus.get_times(stop_id)
     if args.periodic is not None:
         _done = False
         while not _done:
             try:
-                show(stop_id,args.route,True)
-                time.sleep(args.periodic)
+                show(data,args.route,False)
+                s = time.perf_counter()
+                data = ctabus.get_times(stop_id)
+                e = time.perf_counter() - s
+                if e < args.periodic:
+                    time.sleep(args.periodic-e)
             except KeyboardInterrupt as e:
                 _done = True
     else:
-        show(stop_id,args.route)
+        show(data,args.route)
