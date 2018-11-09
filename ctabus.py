@@ -2,9 +2,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 import json
 import os.path as osp
-with open(osp.join(osp.dirname(__file__),'cta_api_key')) as file:
-    api = file.read()
-
+from sensitive import api
 def get_data(type,api_key = api,**args):
     base_url = "http://www.ctabustracker.com/bustime/api/v2/{type}?{query}"
     args['key'] = api_key

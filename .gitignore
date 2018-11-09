@@ -9,3 +9,4 @@ __pycache__
 *.pdf
 *.bat
 stderr.log
+sensitive.py
