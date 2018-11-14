@@ -117,7 +117,7 @@ def show(data,rt_filter=None,_clear=False):
             route = time['rt']
             direction = time['rtdir']
             end = time['des']
-            nm = time['stpnm']
+            nm = time['stpnm'].rstrip()
             print(
                 config.format(**locals()),end= '\n'*2
             )
