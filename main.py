@@ -7,9 +7,10 @@ import re
 import time
 # for logging
 import os.path as osp
+import pytz
 import sys
 import re
-
+CHICAGO_TZ = pytz.timezone("America/Chicago")
 # https://stackoverflow.com/a/5967539
 def atoi(text):
     return int(text) if text.isdigit() else text
@@ -102,14 +103,14 @@ config = '''\
 '''
 def show(data,rt_filter=None,_clear=False):
     times = data['prd']
-    today = datetime.datetime.today()
+    today = datetime.datetime.now(CHICAGO_TZ)
     arrivals =  sorted(times,key = lambda t: t['prdtm'])
     if rt_filter is not None:
         arrivals =filter(lambda arrival: arrival['rt'] == rt_filter,arrivals)
     if _clear:
         clearscr()
     for time in arrivals:
-        arrival = date_parse(time['prdtm'])
+        arrival = date_parse(time['prdtm']).replace(tzinfo=CHICAGO_TZ)
         if arrival > today:
             stop_id = time['stpid']
             delta = pprint_delta(arrival-today)
@@ -158,7 +159,7 @@ if __name__ == '__main__':
             stop_id = gen_list(stops,'stpid','stpnm',key = s)
     else:
         stop_id = args.arg
-    data = ctabus.get_times(stop_id)
+    data=ctabus.get_times(stop_id)
     if args.periodic is not None:
         _done = False
         while not _done:
