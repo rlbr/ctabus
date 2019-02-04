@@ -1,4 +1,5 @@
 from dateutil.parser import parse as date_parse
+from dateutil import tz
 import argparse
 import ctabus
 import datetime
@@ -10,7 +11,7 @@ import os.path as osp
 import pytz
 import sys
 import re
-CHICAGO_TZ = pytz.timezone("America/Chicago")
+CHICAGO_TZ = tz.gettz("America/Chicago")
 # https://stackoverflow.com/a/5967539
 def atoi(text):
     return int(text) if text.isdigit() else text
@@ -110,7 +111,8 @@ def show(data,rt_filter=None,_clear=False):
     if _clear:
         clearscr()
     for time in arrivals:
-        arrival = date_parse(time['prdtm']).replace(tzinfo=CHICAGO_TZ)
+        before = date_parse(time['prdtm'])
+        arrival = before.replace(tzinfo=CHICAGO_TZ)
         if arrival > today:
             stop_id = time['stpid']
             delta = pprint_delta(arrival-today)
