@@ -124,6 +124,7 @@ def show(data,rt_filter=None,_clear=False):
             print(
                 config.format(**locals()),end= '\n'*2
             )
+    print("="*36)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog = 'ctabus')
     parser.add_argument('-l','--lucky',action='store_true',help = 'picks first result')
