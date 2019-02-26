@@ -8,7 +8,6 @@ import re
 import time
 # for logging
 import os.path as osp
-import pytz
 import sys
 import re
 CHICAGO_TZ = tz.gettz("America/Chicago")
