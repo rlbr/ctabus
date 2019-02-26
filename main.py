@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from dateutil.parser import parse as date_parse
 from dateutil import tz
 import argparse
