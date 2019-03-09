@@ -7,6 +7,7 @@ import datetime
 import os
 import re
 import time
+import urllib
 # for logging
 import os.path as osp
 import sys
@@ -186,11 +187,16 @@ if __name__ == '__main__':
             try:
                 show(data, args.route, True)
                 s = time.perf_counter()
-                data = ctabus.get_times(stop_id)
+                timeout = 1
+                if args.periodic > timeout:
+                    timeout = args.periodic
+                data = ctabus.get_times(stop_id,timeout=timeout)
                 e = time.perf_counter() - s
                 if e < args.periodic:
                     time.sleep(args.periodic-e)
             except KeyboardInterrupt:
                 _done = True
+            except urllib.error.URLError:
+                print("Error fetching times")
     else:
         show(data, args.route)
