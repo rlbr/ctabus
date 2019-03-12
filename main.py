@@ -8,11 +8,16 @@ import os
 import re
 import time
 import urllib
+import subprocess
 # for logging
 import os.path as osp
 import sys
 CHICAGO_TZ = tz.gettz("America/Chicago")
 # https://stackoverflow.com/a/5967539
+
+
+def toast(text):
+    subprocess.check_call(["termux-toast",text])
 
 
 def atoi(text):
@@ -122,6 +127,7 @@ def show(data, rt_filter=None, _clear=False):
         arrivals = filter(lambda arrival: arrival['rt'] == rt_filter, arrivals)
     if _clear:
         clearscr()
+    do_toast = True 
     for bustime in arrivals:
         before = date_parse(bustime['prdtm'])
         arrival = before.replace(tzinfo=CHICAGO_TZ)
@@ -133,12 +139,13 @@ def show(data, rt_filter=None, _clear=False):
             direction = bustime['rtdir']
             end = bustime['des']
             nm = bustime['stpnm'].rstrip()
+            if do_toast:
+                toast(config.format(**locals()) + '\n'*2+"\n")
+                do_toast = False
             print(
                 config.format(**locals()), end='\n'*2
             )
     print("="*36)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='ctabus')
     parser.add_argument('-l', '--lucky', action='store_true',
