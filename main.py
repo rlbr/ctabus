@@ -17,7 +17,11 @@ CHICAGO_TZ = tz.gettz("America/Chicago")
 
 
 def toast(text):
-    subprocess.check_call(["termux-toast",text])
+    read, write = os.pipe()
+    os.write(write, text.encode())
+    os.close(write)
+    subprocess.Popen(["termux-toast", "-g", "top", "-c", "white", "-b", "black"],
+                     stdin=read)
 
 
 def atoi(text):
@@ -127,7 +131,7 @@ def show(data, rt_filter=None, _clear=False):
         arrivals = filter(lambda arrival: arrival['rt'] == rt_filter, arrivals)
     if _clear:
         clearscr()
-    do_toast = True 
+    do_toast = True
     for bustime in arrivals:
         before = date_parse(bustime['prdtm'])
         arrival = before.replace(tzinfo=CHICAGO_TZ)
@@ -146,6 +150,8 @@ def show(data, rt_filter=None, _clear=False):
                 config.format(**locals()), end='\n'*2
             )
     print("="*36)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='ctabus')
     parser.add_argument('-l', '--lucky', action='store_true',
@@ -197,7 +203,7 @@ if __name__ == '__main__':
                 timeout = 1
                 if args.periodic > timeout:
                     timeout = args.periodic
-                data = ctabus.get_times(stop_id,timeout=timeout)
+                data = ctabus.get_times(stop_id, timeout=timeout)
                 e = time.perf_counter() - s
                 if e < args.periodic:
                     time.sleep(args.periodic-e)
