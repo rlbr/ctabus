@@ -6,6 +6,7 @@ import ctabus
 import datetime
 import os
 import re
+import socket
 import time
 import urllib
 import subprocess
@@ -152,18 +153,7 @@ def show(data, rt_filter=None, _clear=False, enable_toast=False):
     print("="*36)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='ctabus')
-    parser.add_argument('-l', '--lucky', action='store_true',
-                        help='picks first result')
-    parser.add_argument('-p', '--periodic', metavar='SEC',
-                        type=int, help='checks periodically')
-    parser.add_argument('-r', '--route', default=None)
-    parser.add_argument('-d', '--direction', default=None)
-    parser.add_argument('-t', '--disable_toast', action='store_false')
-    parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
-    args = parser.parse_args()
-    sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
+def main(args):
     args.arg = ' '.join(args.arg)
 
     if not args.arg.isdecimal():
@@ -210,7 +200,22 @@ if __name__ == '__main__':
                     time.sleep(args.periodic-e)
             except KeyboardInterrupt:
                 _done = True
-            except urllib.error.URLError:
+            except (urllib.error.URLError, socket.timeout):
                 print("Error fetching times")
     else:
         show(data, args.route)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='ctabus')
+    parser.add_argument('-l', '--lucky', action='store_true',
+                        help='picks first result')
+    parser.add_argument('-p', '--periodic', metavar='SEC',
+                        type=int, help='checks periodically')
+    parser.add_argument('-r', '--route', default=None)
+    parser.add_argument('-d', '--direction', default=None)
+    parser.add_argument('-t', '--disable_toast', action='store_false')
+    parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
+    args = parser.parse_args()
+    sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
+    main(args)
