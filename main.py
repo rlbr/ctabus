@@ -123,7 +123,7 @@ config = '''\
 '''
 
 
-def show(data, rt_filter=None, _clear=False):
+def show(data, rt_filter=None, _clear=False, enable_toast=False):
     times = data['prd']
     today = datetime.datetime.now(CHICAGO_TZ)
     arrivals = sorted(times, key=lambda t: t['prdtm'])
@@ -143,7 +143,7 @@ def show(data, rt_filter=None, _clear=False):
             direction = bustime['rtdir']
             end = bustime['des']
             nm = bustime['stpnm'].rstrip()
-            if do_toast:
+            if do_toast and enable_toast:
                 toast(config.format(**locals()) + '\n'*2+"\n")
                 do_toast = False
             print(
@@ -160,6 +160,7 @@ if __name__ == '__main__':
                         type=int, help='checks periodically')
     parser.add_argument('-r', '--route', default=None)
     parser.add_argument('-d', '--direction', default=None)
+    parser.add_argument('-t', '--disable_toast', action='store_false')
     parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
     args = parser.parse_args()
     sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
@@ -198,7 +199,7 @@ if __name__ == '__main__':
         _done = False
         while not _done:
             try:
-                show(data, args.route, True)
+                show(data, args.route, True, args.disable_toast)
                 s = time.perf_counter()
                 timeout = 1
                 if args.periodic > timeout:
