@@ -10,7 +10,7 @@ def get_data(type, api_key=api, timeout=None, **args):
     args['format'] = 'json'
     url = base_url.format(type=type, query=urlencode(args))
     if timeout is not None:
-        response = urlopen(url,timeout = timeout)
+        response = urlopen(url, timeout=timeout)
     else:
         response = urlopen(url)
     data = json.load(response)['bustime-response']

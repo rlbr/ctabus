@@ -73,6 +73,7 @@ def pprint_delta(delta):
 
 
 def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
+    from print2d import print2d
     k = displays[sort]
     display_data = {obj[k]: obj[data] for obj in objs}
     srt_keys = sorted(display_data.keys(), key=key)
@@ -158,7 +159,6 @@ def main(args):
 
     if not args.arg.isdecimal():
         # save on import time slightly
-        from print2d import print2d
         from search import Search, StopSearch
         # routes
         if not args.route:
