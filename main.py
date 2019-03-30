@@ -13,6 +13,7 @@ import urllib
 import os.path as osp
 import sys
 CHICAGO_TZ = tz.gettz("America/Chicago")
+DATETIME_FORMAT = "%A, %B %e, %Y %H:%M:%S"
 # https://stackoverflow.com/a/5967539
 
 
@@ -64,6 +65,7 @@ def pprint_delta(delta):
 
 
 def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
+    from print2d import create_table, render_table
     k = displays[sort]
     display_data = {obj[k]: obj[data] for obj in objs}
     srt_keys = sorted(display_data.keys(), key=key)
@@ -77,15 +79,8 @@ def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
     if num_pic:
         display = [[i] + data for i, data in enumerate(display)]
 
-    opts = {
-        'spacer': ' ',
-        'seperator': ' ',
-        'interactive': True,
-        'bottom': '=',
-        'l_end': '<',
-        'r_end': '>',
-    }
-    print2d(display, **opts)
+    table = create_table(display, DATETIME_FORMAT)
+    render_table(table)
     if num_pic:
         which = None
         while not which:
@@ -95,7 +90,7 @@ def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
                 quit()
             try:
                 which = srt_keys[int(which)]
-            except ValueError:
+            except (ValueError, IndexError):
                 which = None
         return display_data[which]
     else:
@@ -145,7 +140,6 @@ def main(args):
 
     if not args.arg.isdecimal():
         # save on import time slightly
-        from print2d import print2d
         from search import Search, StopSearch
         # routes
         if not args.route:
