@@ -1,0 +1,48 @@
+import pickle
+import os
+import lzma
+cache_path = os.path.abspath(os.path.join(__file__, "..", "__pycache__"))
+if not os.path.exists(cache_path):
+    os.mkdir(cache_path)
+
+
+def make_key(*args, **kwargs):
+
+    return args, tuple(sorted(
+        kwargs.items(), key=lambda item: item[0]))
+
+
+class disk_cache:
+    def __init__(self, func):
+        self.fname = "{}.{}.dc".format(func.__module__, func.__name__)
+        self.fname = os.path.join(cache_path, self.fname)
+        self.func = func
+        self.load_cache()
+
+    def __call__(self, *args, **kwargs):
+        key = make_key(*args, **kwargs)
+        try:
+            return self.cache[key]
+        except KeyError:
+            res = self.func(*args, **kwargs)
+            self.cache[key] = res
+            return res
+
+    def load_cache(self):
+        try:
+            with lzma.open(self.fname, 'rb') as file:
+                cache = pickle.load(file)
+                self.fresh = False
+        except FileNotFoundError:
+            cache = {}
+            self.fresh = True
+        self.cache = cache
+
+    def save_cache(self):
+        with lzma.open(self.fname, 'wb') as file:
+            pickle.dump(self.cache, file)
+
+    def delete_cache(self):
+        os.remove(self.fname)
+        self.cache = {}
+        self.fresh = True
