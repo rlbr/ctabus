@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from dateutil.parser import parse as date_parse
 from dateutil import tz
+from disk_cache import disk_cache
 import argparse
 import ctabus
 import datetime
@@ -195,7 +196,14 @@ if __name__ == '__main__':
                         type=int, help='checks periodically')
     parser.add_argument('-r', '--route', default=None)
     parser.add_argument('-d', '--direction', default=None)
+    parser.add_argument('-k', '--kill-cache', action="store_true")
     parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
     args = parser.parse_args()
     sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
+    if args.kill_cache:
+        for cache_obj in disk_cache.caches:
+            cache_obj.kill_cache()
     main(args)
+    for cache_obj in disk_cache.caches:
+        if cache_obj.fresh:
+            cache_obj.save_cache()

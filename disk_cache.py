@@ -13,11 +13,15 @@ def make_key(*args, **kwargs):
 
 
 class disk_cache:
+    caches = []
+    """Decorator to make a function with lru_cache that can be written to disk"""
+
     def __init__(self, func):
         self.fname = "{}.{}.dc".format(func.__module__, func.__name__)
         self.fname = os.path.join(cache_path, self.fname)
         self.func = func
         self.load_cache()
+        disk_cache.caches.append(self)
 
     def __call__(self, *args, **kwargs):
         key = make_key(*args, **kwargs)
@@ -40,7 +44,7 @@ class disk_cache:
 
     def save_cache(self):
         with lzma.open(self.fname, 'wb') as file:
-            pickle.dump(self.cache, file)
+            pickle.dump(self.cache, file, pickle.HIGHEST_PROTOCOL)
 
     def delete_cache(self):
         os.remove(self.fname)
