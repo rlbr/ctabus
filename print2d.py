@@ -1,5 +1,34 @@
+from terminaltables.terminal_io import terminal_size
+from terminaltables import AsciiTable
+from textwrap import fill
+from pydoc import pipepager, tempfilepager, plainpager, plain
 import datetime
-from pydoc import pager
+import os
+import sys
+
+
+def getpager():
+    """Decide what method to use for paging through text."""
+    if not hasattr(sys.stdin, "isatty"):
+        return plainpager
+    if not hasattr(sys.stdout, "isatty"):
+        return plainpager
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return plainpager
+    use_pager = os.environ.get('MANPAGER') or os.environ.get('PAGER')
+    if use_pager:
+        if sys.platform == 'win32':  # pipes completely broken in Windows
+            return lambda text: tempfilepager(plain(text), use_pager)
+        elif os.environ.get('TERM') in ('dumb', 'emacs'):
+            return lambda text: pipepager(plain(text), use_pager)
+        else:
+            return lambda text: pipepager(text, use_pager)
+    if os.environ.get('TERM') in ('dumb', 'emacs'):
+        return plainpager
+    if sys.platform == 'win32':
+        return lambda text: tempfilepager(plain(text), 'more <')
+    if hasattr(os, 'system') and os.system('(less) 2>/dev/null') == 0:
+        return lambda text: pipepager(text, 'less -X')
 
 
 def str_coerce(s, **kwargs):
@@ -9,48 +38,33 @@ def str_coerce(s, **kwargs):
         return str(s)
 
 
-def print2d(list_param,
-            datetime_format="%A, %B %e, %Y %H:%M:%S",
-            seperator=' | ',
-            spacer=' ',
-            bottom='=',
-            l_end='|', r_end='|',
-            interactive=False
-            ):
-    list_param = [[str_coerce(s, datetime_format=datetime_format)
-                   for s in row] for row in list_param]
-
-    max_col = []
+def create_table(list_param, datetime_format):
+    rows = []
     for row in list_param:
-        for i, col in enumerate(row):
-            try:
-                max_col[i] = max(max_col[i], len(col))
-            except IndexError:
-                max_col.append(len(col))
+        rows.append([])
+        for item in row:
+            rows[-1].append(str_coerce(item, datetime_format=datetime_format))
+    return AsciiTable(rows)
 
-    fmt_row = '{content}'
-    if l_end:
-        fmt_row = '{} {}'.format(l_end, fmt_row)
-    if r_end:
-        fmt_row = '{} {}'.format(fmt_row, r_end)
 
-    done = []
-    for row in list_param:
-        content = seperator.join(col.ljust(max_col[i], spacer if i < len(
-            row)-1 or r_end else ' ') for i, col in enumerate(row))
-        done.append(fmt_row.format(content=content))
-
-    if bottom:
-        bottom = bottom*len(done[0])
-        row_sep = ('\n'+bottom+'\n')
-    else:
-        row_sep = '\n'
-    final = row_sep.join(done)
-    if bottom:
-        final = '\n'.join((bottom, final, bottom))
+def render_table(table: AsciiTable, interactive=True):
+    '''Do all wrapping to make the table fit in screen'''
+    table.inner_row_border = True
+    data = table.table_data
+    terminal_width = terminal_size()[0]
+    n_cols = len(data[0])
+    even_distribution = terminal_width // n_cols
+    for row_num, row in enumerate(data):
+        for col_num, col_data in enumerate(row):
+            if len(col_data) > even_distribution:
+                if col_num != n_cols - 1:
+                    data[row_num][col_num] = fill(col_data, even_distribution)
+                else:
+                    data[row_num][col_num] = ''
+                    data[row_num][col_num] = fill(
+                        col_data, table.column_max_width(col_num))
     if interactive:
-        if not bottom:
-            final += '\n'
-        pager(final)
+        pager = getpager()
+        pager(table.table)
     else:
-        return final
+        print(table.table

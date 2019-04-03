@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from dateutil.parser import parse as date_parse
 from dateutil import tz
+from disk_cache import disk_cache, make_key
 import argparse
 import ctabus
 import datetime
@@ -14,6 +15,7 @@ import subprocess
 import os.path as osp
 import sys
 CHICAGO_TZ = tz.gettz("America/Chicago")
+DATETIME_FORMAT = "%A, %B %e, %Y %H:%M:%S"
 # https://stackoverflow.com/a/5967539
 
 
@@ -73,7 +75,8 @@ def pprint_delta(delta):
 
 
 def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
-    from print2d import print2d
+    from print2d import create_table, render_table
+    # sort based on column number
     k = displays[sort]
     display_data = {obj[k]: obj[data] for obj in objs}
     srt_keys = sorted(display_data.keys(), key=key)
@@ -87,15 +90,8 @@ def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
     if num_pic:
         display = [[i] + data for i, data in enumerate(display)]
 
-    opts = {
-        'spacer': ' ',
-        'seperator': ' ',
-        'interactive': True,
-        'bottom': '=',
-        'l_end': '<',
-        'r_end': '>',
-    }
-    print2d(display, **opts)
+    table = create_table(display, DATETIME_FORMAT)
+    render_table(table)
     if num_pic:
         which = None
         while not which:
@@ -105,7 +101,7 @@ def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
                 quit()
             try:
                 which = srt_keys[int(which)]
-            except ValueError:
+            except (ValueError, IndexError):
                 which = None
         return display_data[which]
     else:
@@ -170,7 +166,11 @@ def main(args):
         data = ctabus.get_directions(route)['directions']
         # direction
         if not args.direction:
-            direction = gen_list(data, 'dir', 'dir')
+            for direction_obj in data:
+                friendly_name = ctabus.get_name_from_direction(
+                    route, direction_obj['dir'])
+                direction_obj['friendly_name'] = friendly_name
+            direction = gen_list(data, 'dir', 'dir', 'friendly_name')
         else:
             s = Search(args.direction)
             direction = sorted((obj['dir'] for obj in data), key=s)[0]
@@ -185,6 +185,10 @@ def main(args):
     else:
         stop_id = args.arg
     data = ctabus.get_times(stop_id)
+    info = data['prd'][0]
+    key = make_key(info['rt'], info['rtdir'], ctabus.api, None)
+    if key not in ctabus.get_name_from_direction.cache.keys():
+        ctabus.get_name_from_direction.cache[key] = info['des']
     if args.periodic is not None:
         _done = False
         while not _done:
@@ -215,7 +219,14 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--route', default=None)
     parser.add_argument('-d', '--direction', default=None)
     parser.add_argument('-t', '--disable_toast', action='store_false')
+    parser.add_argument('-k', '--kill-cache', action="store_true")
     parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
     args = parser.parse_args()
     sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
+    if args.kill_cache:
+        for cache_obj in disk_cache.caches:
+            cache_obj.kill_cache()
     main(args)
+    for cache_obj in disk_cache.caches:
+        if cache_obj.fresh:
+            cache_obj.save_cache()

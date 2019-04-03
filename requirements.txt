@@ -1,2 +1,3 @@
 edlib
 python-dateutil
+terminaltables

@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
 from urllib.request import urlopen
+from disk_cache import disk_cache
 import json
 from sensitive import api
 
@@ -25,13 +26,24 @@ def get_times(stop_id, api_key=api, timeout=None):
     return get_data('getpredictions', api_key, stpid=stop_id, timeout=timeout)
 
 
+@disk_cache
 def get_routes(api_key=api, timeout=None):
     return get_data('getroutes', api_key, timeout=timeout)
 
 
+@disk_cache
 def get_directions(route, api_key=api, timeout=None):
     return get_data('getdirections', api_key, rt=route, timeout=timeout)
 
 
+@disk_cache
 def get_stops(route, direction, api_key=api, timeout=None):
-    return get_data('getstops', api_key, rt=route, dir=direction, timeout=timeout)
+    return get_data('getstops', api_key, rt=route, dir=direction,
+                    timeout=timeout)
+
+
+@disk_cache
+def get_name_from_direction(route, direction, api_key=api, timeout=None):
+    test_stop = get_stops(route, direction, api_key=api_key,
+                          timeout=timeout)['stops'][0]['stpid']
+    return get_times(test_stop, api_key=api, timeout=timeout)['prd'][0]['des']
