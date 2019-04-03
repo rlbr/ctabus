@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from dateutil.parser import parse as date_parse
 from dateutil import tz
-from disk_cache import disk_cache
+from disk_cache import disk_cache, make_key
 import argparse
 import ctabus
 import datetime
@@ -67,6 +67,7 @@ def pprint_delta(delta):
 
 def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
     from print2d import create_table, render_table
+    # sort based on column number
     k = displays[sort]
     display_data = {obj[k]: obj[data] for obj in objs}
     srt_keys = sorted(display_data.keys(), key=key)
@@ -152,7 +153,11 @@ def main(args):
         data = ctabus.get_directions(route)['directions']
         # direction
         if not args.direction:
-            direction = gen_list(data, 'dir', 'dir')
+            for direction_obj in data:
+                friendly_name = ctabus.get_name_from_direction(
+                    route, direction_obj['dir'])
+                direction_obj['friendly_name'] = friendly_name
+            direction = gen_list(data, 'dir', 'dir', 'friendly_name')
         else:
             s = Search(args.direction)
             direction = sorted((obj['dir'] for obj in data), key=s)[0]
@@ -167,6 +172,10 @@ def main(args):
     else:
         stop_id = args.arg
     data = ctabus.get_times(stop_id)
+    info = data['prd'][0]
+    key = make_key(info['rt'], info['rtdir'], ctabus.api, None)
+    if key not in ctabus.get_name_from_direction.cache.keys():
+        ctabus.get_name_from_direction.cache[key] = info['des']
     if args.periodic is not None:
         _done = False
         while not _done:

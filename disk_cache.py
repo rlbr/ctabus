@@ -13,8 +13,8 @@ def make_key(*args, **kwargs):
 
 
 class disk_cache:
+    """Decorator to make persistent cache"""
     caches = []
-    """Decorator to make a function with lru_cache that can be written to disk"""
 
     def __init__(self, func):
         self.fname = "{}.{}.dc".format(func.__module__, func.__name__)
@@ -26,8 +26,10 @@ class disk_cache:
     def __call__(self, *args, **kwargs):
         key = make_key(*args, **kwargs)
         try:
-            return self.cache[key]
+            res = self.cache[key]
+            return res
         except KeyError:
+            self.fresh = True
             res = self.func(*args, **kwargs)
             self.cache[key] = res
             return res

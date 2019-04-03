@@ -1,11 +1,10 @@
+from terminaltables.terminal_io import terminal_size
+from terminaltables import AsciiTable
+from textwrap import fill
+from pydoc import pipepager, tempfilepager, plainpager, plain
 import datetime
 import os
 import sys
-import pydoc
-from pydoc import pager, pipepager, tempfilepager, plainpager, plain
-from textwrap import fill
-from terminaltables import AsciiTable
-from terminaltables.terminal_io import terminal_size
 
 
 def getpager():
@@ -30,9 +29,6 @@ def getpager():
         return lambda text: tempfilepager(plain(text), 'more <')
     if hasattr(os, 'system') and os.system('(less) 2>/dev/null') == 0:
         return lambda text: pipepager(text, 'less -X')
-
-
-pydoc.getpager = getpager
 
 
 def str_coerce(s, **kwargs):
@@ -68,7 +64,7 @@ def render_table(table: AsciiTable, interactive=True):
                     data[row_num][col_num] = fill(
                         col_data, table.column_max_width(col_num))
     if interactive:
+        pager = getpager()
         pager(table.table)
     else:
-        print(table.table)
-
+        print(table.table
