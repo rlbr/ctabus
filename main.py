@@ -176,6 +176,7 @@ def main(args):
     key = make_key(info['rt'], info['rtdir'], ctabus.api, None)
     if key not in ctabus.get_name_from_direction.cache.keys():
         ctabus.get_name_from_direction.cache[key] = info['des']
+        ctabus.get_name_from_direction.fresh = True
     if args.periodic is not None:
         _done = False
         while not _done:
