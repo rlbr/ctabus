@@ -226,7 +226,7 @@ if __name__ == '__main__':
     sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
     if args.kill_cache:
         for cache_obj in disk_cache.caches:
-            cache_obj.kill_cache()
+            cache_obj.delete_cache()
     main(args)
     for cache_obj in disk_cache.caches:
         if cache_obj.fresh:
