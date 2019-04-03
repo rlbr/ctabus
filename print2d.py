@@ -67,4 +67,4 @@ def render_table(table: AsciiTable, interactive=True):
         pager = getpager()
         pager(table.table)
     else:
-        print(table.table
+        print(table.table)
