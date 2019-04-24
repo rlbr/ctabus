@@ -201,12 +201,13 @@ def main(args):
                     timeout = args.periodic
                 data = ctabus.get_times(stop_id, timeout=timeout)
                 e = time.perf_counter() - s
-                if e < args.periodic:
-                    time.sleep(args.periodic-e)
             except KeyboardInterrupt:
                 _done = True
             except (urllib.error.URLError, socket.timeout):
+                e = time.perf_counter() - s
                 print("Error fetching times")
+            if e < args.periodic:
+                time.sleep(args.periodic-e)
     else:
         show(data, args.route)
 
@@ -226,7 +227,7 @@ if __name__ == '__main__':
     sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
     if args.kill_cache:
         for cache_obj in disk_cache.caches:
-            cache_obj.kill_cache()
+            cache_obj.delete_cache()
     main(args)
     for cache_obj in disk_cache.caches:
         if cache_obj.fresh:
