@@ -14,6 +14,8 @@ import subprocess
 # for logging
 import os.path as osp
 import sys
+import shutil
+HAS_TOAST = shutil.which('termux-toast') is not None
 CHICAGO_TZ = tz.gettz("America/Chicago")
 DATETIME_FORMAT = "%A, %B %e, %Y %H:%M:%S"
 # https://stackoverflow.com/a/5967539
@@ -194,19 +196,20 @@ def main(args):
         _done = False
         while not _done:
             try:
-                show(data, args.route, True, args.disable_toast)
+                show(data, args.route, True, args.disable_toast and HAS_TOAST)
                 s = time.perf_counter()
                 timeout = 1
                 if args.periodic > timeout:
                     timeout = args.periodic
                 data = ctabus.get_times(stop_id, timeout=timeout)
                 e = time.perf_counter() - s
-                if e < args.periodic:
-                    time.sleep(args.periodic-e)
             except KeyboardInterrupt:
                 _done = True
             except (urllib.error.URLError, socket.timeout):
+                e = time.perf_counter() - s
                 print("Error fetching times")
+            if e < args.periodic:
+                time.sleep(args.periodic-e)
     else:
         show(data, args.route)
 
