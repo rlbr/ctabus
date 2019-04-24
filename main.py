@@ -14,6 +14,8 @@ import subprocess
 # for logging
 import os.path as osp
 import sys
+import shutil
+HAS_TOAST = shutil.which('termux-toast') is not None
 CHICAGO_TZ = tz.gettz("America/Chicago")
 DATETIME_FORMAT = "%A, %B %e, %Y %H:%M:%S"
 # https://stackoverflow.com/a/5967539
@@ -194,7 +196,7 @@ def main(args):
         _done = False
         while not _done:
             try:
-                show(data, args.route, True, args.disable_toast)
+                show(data, args.route, True, args.disable_toast and HAS_TOAST)
                 s = time.perf_counter()
                 timeout = 1
                 if args.periodic > timeout:
