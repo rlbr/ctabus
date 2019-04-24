@@ -188,12 +188,13 @@ def main(args):
                     timeout = args.periodic
                 data = ctabus.get_times(stop_id, timeout=timeout)
                 e = time.perf_counter() - s
-                if e < args.periodic:
-                    time.sleep(args.periodic-e)
             except KeyboardInterrupt:
                 _done = True
             except (urllib.error.URLError, socket.timeout):
+                e = time.perf_counter() - s
                 print("Error fetching times")
+            if e < args.periodic:
+                time.sleep(args.periodic-e)
     else:
         show(data, args.route)
 
