@@ -20,6 +20,17 @@ CHICAGO_TZ = tz.gettz("America/Chicago")
 DATETIME_FORMAT = "%A, %B %e, %Y %H:%M:%S"
 # https://stackoverflow.com/a/5967539
 
+parser = argparse.ArgumentParser(prog='ctabus')
+parser.add_argument('-l', '--lucky', action='store_true',
+                    help='picks first result')
+parser.add_argument('-p', '--periodic', metavar='SEC',
+                    type=int, help='checks periodically')
+parser.add_argument('-r', '--route', default=None)
+parser.add_argument('-d', '--direction', default=None)
+parser.add_argument('-t', '--disable_toast', action='store_false')
+parser.add_argument('-k', '--kill-cache', action="store_true")
+parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
+
 
 def toast(text):
     read, write = os.pipe()
@@ -125,7 +136,7 @@ config = '''\
 
 def show(data, rt_filter=None, _clear=False, enable_toast=False):
     times = data['prd']
-    today = datetime.datetime.now(CHICAGO_TZ)
+    now = datetime.datetime.now(CHICAGO_TZ)
     arrivals = sorted(times, key=lambda t: t['prdtm'])
     if rt_filter is not None:
         arrivals = filter(lambda arrival: arrival['rt'] == rt_filter, arrivals)
@@ -135,9 +146,9 @@ def show(data, rt_filter=None, _clear=False, enable_toast=False):
     for bustime in arrivals:
         before = date_parse(bustime['prdtm'])
         arrival = before.replace(tzinfo=CHICAGO_TZ)
-        if arrival > today:
+        if arrival > now:
             stop_id = bustime['stpid']
-            delta = pprint_delta(arrival-today)
+            delta = pprint_delta(arrival-now)
             t = arrival.strftime('%H:%M:%S')
             route = bustime['rt']
             direction = bustime['rtdir']
@@ -152,85 +163,94 @@ def show(data, rt_filter=None, _clear=False, enable_toast=False):
     print("="*36)
 
 
+def _picker(args):
+    # save on import time slightly
+    from search import Search, StopSearch
+    # routes
+    if not args.route:
+        data = ctabus.get_routes()['routes']
+        route = gen_list(data, 'rt', 'rt', 'rtnm',
+                         num_pic=False, key=numb_sort)
+    else:
+        route = args.route
+    data = ctabus.get_directions(route)['directions']
+    # direction
+    if not args.direction:
+        for direction_obj in data:
+            friendly_name = ctabus.get_name_from_direction(
+                route, direction_obj['dir'])
+            direction_obj['friendly_name'] = friendly_name
+        direction = gen_list(data, 'dir', 'dir', 'friendly_name')
+    else:
+        s = Search(args.direction)
+        direction = sorted((obj['dir'] for obj in data), key=s)[0]
+    # direction
+    stops = ctabus.get_stops(route, direction)['stops']
+    s = StopSearch(args.arg)
+    if args.lucky:
+        stop_id = sorted(stops, key=lambda stop: s(stop['stpnm']))[
+            0]['stpid']
+    else:
+        stop_id = gen_list(stops, 'stpid', 'stpnm', key=s)
+    return stop_id
+
+
+def _picker_recent(args):
+    pass
+
+
+def _main_periodic(args, stop_id, init_data):
+    _done = False
+    data = init_data
+    while not _done:
+        try:
+            show(data, args.route, True, args.disable_toast and HAS_TOAST)
+            s = time.perf_counter()
+            timeout = 1
+            if args.periodic > timeout:
+                timeout = args.periodic
+            data = ctabus.get_times(stop_id, timeout=timeout)
+            e = time.perf_counter() - s
+        except KeyboardInterrupt:
+            _done = True
+        except (urllib.error.URLError, socket.timeout):
+            e = time.perf_counter() - s
+            print("Error fetching times")
+        if e < args.periodic:
+            time.sleep(args.periodic-e)
+
+
 def main(args):
+    sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
+    if args.kill_cache:
+        for cache_obj in disk_cache.caches:
+            cache_obj.delete_cache()
     args.arg = ' '.join(args.arg)
 
-    if not args.arg.isdecimal():
-        # save on import time slightly
-        from search import Search, StopSearch
-        # routes
-        if not args.route:
-            data = ctabus.get_routes()['routes']
-            route = gen_list(data, 'rt', 'rt', 'rtnm',
-                             num_pic=False, key=numb_sort)
-        else:
-            route = args.route
-        data = ctabus.get_directions(route)['directions']
-        # direction
-        if not args.direction:
-            for direction_obj in data:
-                friendly_name = ctabus.get_name_from_direction(
-                    route, direction_obj['dir'])
-                direction_obj['friendly_name'] = friendly_name
-            direction = gen_list(data, 'dir', 'dir', 'friendly_name')
-        else:
-            s = Search(args.direction)
-            direction = sorted((obj['dir'] for obj in data), key=s)[0]
-        # direction
-        stops = ctabus.get_stops(route, direction)['stops']
-        s = StopSearch(args.arg)
-        if args.lucky:
-            stop_id = sorted(stops, key=lambda stop: s(stop['stpnm']))[
-                0]['stpid']
-        else:
-            stop_id = gen_list(stops, 'stpid', 'stpnm', key=s)
-    else:
+    if args.arg.isdecimal():
         stop_id = args.arg
+    else:
+        if args.arg == ':recent:':
+            pass
+        else:
+            stop_id = _picker(args)
+
     data = ctabus.get_times(stop_id)
     info = data['prd'][0]
     key = make_key(info['rt'], info['rtdir'], ctabus.api, None)
     if key not in ctabus.get_name_from_direction.cache.keys():
         ctabus.get_name_from_direction.cache[key] = info['des']
         ctabus.get_name_from_direction.fresh = True
+
     if args.periodic is not None:
-        _done = False
-        while not _done:
-            try:
-                show(data, args.route, True, args.disable_toast and HAS_TOAST)
-                s = time.perf_counter()
-                timeout = 1
-                if args.periodic > timeout:
-                    timeout = args.periodic
-                data = ctabus.get_times(stop_id, timeout=timeout)
-                e = time.perf_counter() - s
-            except KeyboardInterrupt:
-                _done = True
-            except (urllib.error.URLError, socket.timeout):
-                e = time.perf_counter() - s
-                print("Error fetching times")
-            if e < args.periodic:
-                time.sleep(args.periodic-e)
+        _main_periodic(args, stop_id, data)
     else:
         show(data, args.route)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='ctabus')
-    parser.add_argument('-l', '--lucky', action='store_true',
-                        help='picks first result')
-    parser.add_argument('-p', '--periodic', metavar='SEC',
-                        type=int, help='checks periodically')
-    parser.add_argument('-r', '--route', default=None)
-    parser.add_argument('-d', '--direction', default=None)
-    parser.add_argument('-t', '--disable_toast', action='store_false')
-    parser.add_argument('-k', '--kill-cache', action="store_true")
-    parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
-    args = parser.parse_args()
-    sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
-    if args.kill_cache:
-        for cache_obj in disk_cache.caches:
-            cache_obj.delete_cache()
-    main(args)
     for cache_obj in disk_cache.caches:
         if cache_obj.fresh:
             cache_obj.save_cache()
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    main(args)
