@@ -1,7 +1,7 @@
 from setuptools import setup
 
 with open('requirements.txt') as file:
-    INSTALL_REQUIRES = file.rstrip().split('\n')
+    INSTALL_REQUIRES = file.read().rstrip().split('\n')
 
 setup(
     name='ctabus',

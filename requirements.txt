@@ -1,3 +1,4 @@
 edlib
 python-dateutil
 terminaltables
+appdirs

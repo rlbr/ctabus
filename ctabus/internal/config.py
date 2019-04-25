@@ -4,6 +4,7 @@ import appdirs
 
 app_dirs = appdirs.AppDirs('ctabus')
 config_dir = app_dirs.user_config_dir
+cache_path = app_dirs.user_cache_dir
 try:
     with open(os.path.join(config_dir, 'api.txt')) as file:
         API_KEY = file.read().rstrip()

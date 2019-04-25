@@ -1,7 +1,7 @@
 import pickle
 import os
 import lzma
-from ctabus.config import cache_path
+from ctabus.internal.config import cache_path
 if not os.path.exists(cache_path):
     os.mkdir(cache_path)
 
