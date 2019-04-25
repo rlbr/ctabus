@@ -1,6 +1,7 @@
-import edlib
 import re
 import json
+
+import edlib
 
 
 def editdistance(a, b):

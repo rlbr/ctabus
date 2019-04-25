@@ -1,10 +1,11 @@
-from terminaltables.terminal_io import terminal_size
-from terminaltables import AsciiTable
-from textwrap import fill
-from pydoc import pipepager, tempfilepager, plainpager, plain
 import datetime
 import os
 import sys
+from pydoc import pipepager, tempfilepager, plainpager, plain
+
+from terminaltables.terminal_io import terminal_size
+from terminaltables import AsciiTable
+from textwrap import fill
 
 
 def getpager():

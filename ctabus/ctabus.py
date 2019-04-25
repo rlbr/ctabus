@@ -1,8 +1,9 @@
+import json
 from urllib.parse import urlencode
 from urllib.request import urlopen
-from disk_cache import disk_cache
-import json
-from sensitive import api
+
+from ctabus.internal.disk_cache import disk_cache
+from ctabus.internal.config import API_KEY as api
 
 
 def get_data(type, api_key=api, timeout=None, **args):
