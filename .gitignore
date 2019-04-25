@@ -9,3 +9,4 @@ __pycache__
 *.bat
 stderr.log
 sensitive.py
+*.egg-info
