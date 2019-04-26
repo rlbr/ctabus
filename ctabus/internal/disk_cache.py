@@ -1,9 +1,7 @@
 import pickle
 import os
 import lzma
-from ctabus.internal.config import cache_path
-if not os.path.exists(cache_path):
-    os.mkdir(cache_path)
+from ctabus.internal.config import cache_dir
 
 
 def make_key(*args, **kwargs):
@@ -18,7 +16,7 @@ class disk_cache:
 
     def __init__(self, func):
         self.fname = "{}.{}.dc".format(func.__module__, func.__name__)
-        self.fname = os.path.join(cache_path, self.fname)
+        self.fname = os.path.join(cache_dir, self.fname)
         self.func = func
         self.load_cache()
         disk_cache.caches.append(self)

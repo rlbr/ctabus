@@ -13,6 +13,7 @@ import os.path as osp
 import sys
 import shutil
 
+from ctabus.internal.config import log_dir
 from ctabus.internal.disk_cache import disk_cache, make_key
 from ctabus import ctabus
 
@@ -89,7 +90,7 @@ def pprint_delta(delta):
 
 
 def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
-    from print2d import create_table, render_table
+    from ctabus.internal.print2d import create_table, render_table
     # sort based on column number
     k = displays[sort]
     display_data = {obj[k]: obj[data] for obj in objs}
@@ -166,7 +167,7 @@ def show(data, rt_filter=None, _clear=False, enable_toast=False):
 
 def _picker(args):
     # save on import time slightly
-    from search import Search, StopSearch
+    from ctabus.internal.search import Search, StopSearch
     # routes
     if not args.route:
         data = ctabus.get_routes()['routes']
@@ -205,26 +206,27 @@ def _main_periodic(args, stop_id, init_data):
     data = init_data
     while not _done:
         try:
-            show(data, args.route, True, args.disable_toast and HAS_TOAST)
-            s = time.perf_counter()
-            timeout = 1
-            if args.periodic > timeout:
-                timeout = args.periodic
-            data = ctabus.get_times(stop_id, timeout=timeout)
-            e = time.perf_counter() - s
+            try:
+                show(data, args.route, True, args.disable_toast and HAS_TOAST)
+                s = time.perf_counter()
+                timeout = 1
+                if args.periodic > timeout:
+                    timeout = args.periodic
+                data = ctabus.get_times(stop_id, timeout=timeout)
+                e = time.perf_counter() - s
+            except (urllib.error.URLError, socket.timeout):
+                e = time.perf_counter() - s
+                print("Error fetching times")
+            if e < args.periodic:
+                time.sleep(args.periodic-e)
         except KeyboardInterrupt:
             _done = True
-        except (urllib.error.URLError, socket.timeout):
-            e = time.perf_counter() - s
-            print("Error fetching times")
-        if e < args.periodic:
-            time.sleep(args.periodic-e)
 
 
 def main(args=None):
     if args is None:
         args = parser.parse_args()
-    sys.stderr = open(osp.join(osp.dirname(__file__), 'stderr.log'), 'w')
+    sys.stderr = open(osp.join(log_dir, 'stderr.log'), 'w')
     if args.kill_cache:
         for cache_obj in disk_cache.caches:
             cache_obj.delete_cache()
