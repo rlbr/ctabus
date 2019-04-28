@@ -3,8 +3,8 @@ import os
 import sys
 from pydoc import pipepager, tempfilepager, plainpager, plain
 
-from terminaltables.terminal_io import terminal_size
 from terminaltables import AsciiTable
+from terminaltables.terminal_io import terminal_size
 from textwrap import fill
 
 

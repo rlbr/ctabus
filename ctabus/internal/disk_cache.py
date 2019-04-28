@@ -1,6 +1,7 @@
-import pickle
-import os
 import lzma
+import os
+import pickle
+
 from ctabus.internal.config import cache_dir
 
 

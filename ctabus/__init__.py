@@ -1,21 +1,22 @@
 #!/usr/bin/python3
-from dateutil.parser import parse as date_parse
 from dateutil import tz
+from dateutil.parser import parse as date_parse
+
 import argparse
 import datetime
 import os
+import os.path as osp
 import re
+import shutil
 import socket
+import subprocess
+import sys
 import time
 import urllib
-import subprocess
-import os.path as osp
-import sys
-import shutil
 
+from ctabus import fetch
 from ctabus.internal.config import log_dir
 from ctabus.internal.disk_cache import disk_cache, make_key
-from ctabus import fetch
 
 HAS_TOAST = shutil.which('termux-toast') is not None
 CHICAGO_TZ = tz.gettz("America/Chicago")
