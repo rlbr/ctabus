@@ -15,7 +15,7 @@ import shutil
 
 from ctabus.internal.config import log_dir
 from ctabus.internal.disk_cache import disk_cache, make_key
-from ctabus import ctabus
+from ctabus import fetch
 
 HAS_TOAST = shutil.which('termux-toast') is not None
 CHICAGO_TZ = tz.gettz("America/Chicago")
@@ -170,16 +170,16 @@ def _picker(args):
     from ctabus.internal.search import Search, StopSearch
     # routes
     if not args.route:
-        data = ctabus.get_routes()['routes']
+        data = fetch.get_routes()['routes']
         route = gen_list(data, 'rt', 'rt', 'rtnm',
                          num_pic=False, key=numb_sort)
     else:
         route = args.route
-    data = ctabus.get_directions(route)['directions']
+    data = fetch.get_directions(route)['directions']
     # direction
     if not args.direction:
         for direction_obj in data:
-            friendly_name = ctabus.get_name_from_direction(
+            friendly_name = fetch.get_name_from_direction(
                 route, direction_obj['dir'])
             direction_obj['friendly_name'] = friendly_name
         direction = gen_list(data, 'dir', 'dir', 'friendly_name')
@@ -187,7 +187,7 @@ def _picker(args):
         s = Search(args.direction)
         direction = sorted((obj['dir'] for obj in data), key=s)[0]
     # direction
-    stops = ctabus.get_stops(route, direction)['stops']
+    stops = fetch.get_stops(route, direction)['stops']
     s = StopSearch(args.arg)
     if args.lucky:
         stop_id = sorted(stops, key=lambda stop: s(stop['stpnm']))[
@@ -212,7 +212,7 @@ def _main_periodic(args, stop_id, init_data):
                 timeout = 1
                 if args.periodic > timeout:
                     timeout = args.periodic
-                data = ctabus.get_times(stop_id, timeout=timeout)
+                data = fetch.get_times(stop_id, timeout=timeout)
                 e = time.perf_counter() - s
             except (urllib.error.URLError, socket.timeout):
                 e = time.perf_counter() - s
@@ -240,12 +240,12 @@ def main(args=None):
         else:
             stop_id = _picker(args)
 
-    data = ctabus.get_times(stop_id)
+    data = fetch.get_times(stop_id)
     info = data['prd'][0]
-    key = make_key(info['rt'], info['rtdir'], ctabus.api, None)
-    if key not in ctabus.get_name_from_direction.cache.keys():
-        ctabus.get_name_from_direction.cache[key] = info['des']
-        ctabus.get_name_from_direction.fresh = True
+    key = make_key(info['rt'], info['rtdir'], fetch.api, None)
+    if key not in fetch.get_name_from_direction.cache.keys():
+        fetch.get_name_from_direction.cache[key] = info['des']
+        fetch.get_name_from_direction.fresh = True
 
     if args.periodic is not None:
         _main_periodic(args, stop_id, data)
