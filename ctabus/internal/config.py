@@ -33,12 +33,14 @@ class RecentList:
         except FileNotFoundError:
             self.elements = []
             self.fresh = True
+        self.current = set(self.elements)
 
     def add(self, element):
-        if len(self.elements)+1 > self.maxsize:
-            del self.elements[-1]
-        self.elements.insert(0, element)
-        self.fresh = True
+        if element not in self.current:
+            if len(self.elements)+1 > self.maxsize:
+                del self.elements[-1]
+            self.elements.insert(0, element)
+            self.fresh = True
 
     def get(self, element_name_or_index):
         if type(element_name_or_index) == int:
