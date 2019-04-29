@@ -15,7 +15,7 @@ import time
 import urllib
 
 from ctabus import fetch
-from ctabus.internal.config import log_dir
+from ctabus.internal.config import log_dir, recent_list
 from ctabus.internal.disk_cache import disk_cache, make_key
 
 HAS_TOAST = shutil.which('termux-toast') is not None
@@ -32,7 +32,8 @@ parser.add_argument('-r', '--route', default=None)
 parser.add_argument('-d', '--direction', default=None)
 parser.add_argument('-t', '--disable_toast', action='store_false')
 parser.add_argument('-k', '--kill-cache', action="store_true")
-parser.add_argument('arg', nargs='+', metavar='(stop-id | cross streets)')
+parser.add_argument(
+    'arg', nargs='*' if len(recent_list.elements) > 0 else '+', metavar='(stop-id | cross streets)', default=[':recents:'])
 
 
 def toast(text):
@@ -90,44 +91,88 @@ def pprint_delta(delta):
     return ret
 
 
-def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
-    from ctabus.internal.print2d import create_table, render_table
-    # sort based on column number
-    k = displays[sort]
-    display_data = {obj[k]: obj[data] for obj in objs}
-    srt_keys = sorted(display_data.keys(), key=key)
+class Table:
+    imported = False
 
-    display = sorted(
-        [
-            [obj[d] for d in displays] for obj in objs
-        ],
-        key=lambda row: key(row[sort]) if key else row[sort]
-    )
-    if num_pic:
-        display = [[i] + data for i, data in enumerate(display)]
+    def __init__(self, dicts):
+        self.dicts = dicts
+        self.display = None
 
-    table = create_table(display, DATETIME_FORMAT)
-    render_table(table)
-    if num_pic:
+    def sort_by(self, key_name, key_function):
+        if key_function is None:
+            def key(obj): return obj[key_name]
+        else:
+            def key(obj): return key_function(obj[key_name])
+
+        self.dicts = sorted(
+            self.dicts, key=key)
+
+    def set_display_categories(self, categories):
+        self.display = [
+            [
+                _dict[column_name] for column_name in categories
+            ] for _dict in self.dicts
+        ]
+
+    def get_index_interactive(self):
+        from ctabus.internal.print2d import create_table, render_table
+        if self.display is None:
+            raise Exception("Display columns not set")
+        display = [
+            [i] + row for i, row in enumerate(self.display)
+        ]
+        table = create_table(display, DATETIME_FORMAT)
+        render_table(table)
         which = None
-        while not which:
+        while which is None:
             try:
-                which = input('Which one?: ')
-            except KeyboardInterrupt:
-                quit()
-            try:
-                which = srt_keys[int(which)]
-            except (ValueError, IndexError):
+                which = int(input('Which one?: '))
+                if which >= len(self.dicts):
+                    print("Max index is {}".format(len(self.dicts)-1))
+
+            except ValueError:
                 which = None
-        return display_data[which]
-    else:
-        ret = None
-        while not ret:
-            try:
-                ret = display_data[input('Which one?: ')]
-            except KeyError:
-                pass
-        return ret
+        return which
+
+    def get_name_interactive(self, data_column):
+        from ctabus.internal.print2d import create_table, render_table
+        if self.display is None:
+            raise Exception("Display columns not set")
+        display = self.display
+        table = create_table(display, DATETIME_FORMAT)
+        render_table(table)
+        which = None
+        valid = set(_dict[data_column] for _dict in self.dicts)
+        while which is None:
+            which = input('Which one?: ')
+            if which not in valid:
+                which = None
+        return which
+
+
+def gen_list(objs, data, *displays, key=None, sort=0, num_pic=True):
+    """Returns an item from objs[data] based on name or index
+
+
+    :param objs: list of dicts that contain data and display
+    :param data: name of dictionary key to return
+    :param displays: things to show the user
+    :param key: function to use for sorting
+    :param sort: which column of the displays should be used for sorting
+    :param num_pic: indicate whether or not to use indices to pick value
+    """
+    display_table = Table(objs)
+    display_table.sort_by(displays[sort], key)
+    display_table.set_display_categories(displays)
+    try:
+        if num_pic:
+            which = display_table.get_index_interactive()
+            return display_table.dicts[which][data]
+        else:
+            which = display_table.get_name_interactive(data)
+            return which
+    except KeyboardInterrupt:
+        quit()
 
 
 config = '''\
@@ -199,7 +244,15 @@ def _picker(args):
 
 
 def _picker_recent(args):
-    pass
+    recent_stops = []
+    for stop in recent_list.elements:
+        info = fetch.get_data_from_stop_id(stop)
+        recent_stops.append(info)
+    display_table = Table(recent_stops)
+    display_table.set_display_categories(['stop_id', 'stop_name',
+                                          'route_number', 'route_direction', 'route_name'])
+    index = display_table.get_index_interactive()
+    return recent_list.get(index)
 
 
 def _main_periodic(args, stop_id, init_data):
@@ -232,15 +285,17 @@ def main(args=None):
         for cache_obj in disk_cache.caches:
             cache_obj.delete_cache()
     args.arg = ' '.join(args.arg)
-
+    from_recent = False
     if args.arg.isdecimal():
         stop_id = args.arg
     else:
-        if args.arg == ':recent:':
-            pass
+        if args.arg == ':recents:':
+            stop_id = _picker_recent(args)
+            from_recent = True
         else:
             stop_id = _picker(args)
-
+    if not from_recent:
+        recent_list.add(stop_id)
     data = fetch.get_times(stop_id)
     info = data['prd'][0]
     key = make_key(info['rt'], info['rtdir'], fetch.api, None)
@@ -252,9 +307,6 @@ def main(args=None):
         _main_periodic(args, stop_id, data)
     else:
         show(data, args.route)
-    for cache_obj in disk_cache.caches:
-        if cache_obj.fresh:
-            cache_obj.save_cache()
 
 
 if __name__ == '__main__':

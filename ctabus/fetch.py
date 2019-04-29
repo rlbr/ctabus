@@ -48,3 +48,16 @@ def get_name_from_direction(route, direction, api_key=api, timeout=None):
     test_stop = get_stops(route, direction, api_key=api_key,
                           timeout=timeout)['stops'][0]['stpid']
     return get_times(test_stop, api_key=api, timeout=timeout)['prd'][0]['des']
+
+
+@disk_cache
+def get_data_from_stop_id(stop_id):
+    info = get_times(stop_id)['prd'][0]
+    ret = {
+        'route_direction': info['rtdir'],
+        'route_name': info['des'],
+        'route_number': info['rt'],
+        'stop_id': stop_id,
+        'stop_name': info['stpnm'],
+    }
+    return ret
