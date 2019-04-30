@@ -1,7 +1,7 @@
+import atexit
 import lzma
 import os
 import pickle
-import atexit
 
 from ctabus.internal.config import cache_dir
 
