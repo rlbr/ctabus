@@ -40,7 +40,7 @@ def toast(text):
     read, write = os.pipe()
     os.write(write, text.encode())
     os.close(write)
-    subprocess.Popen(["termux-toast", "-g", "top", "-c", "white", "-b", "black"],
+    subprocess.Popen(["termux-toast", "-s", "-g", "top", "-c", "white", "-b", "black"],
                      stdin=read)
 
 
