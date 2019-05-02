@@ -59,7 +59,7 @@ def fix_iteration(table: AsciiTable, max_width):
     sorted_sizes = sorted(
         range(col_length), key=lambda i: sizes[i], reverse=True)
     workon = sorted_sizes[0]
-    # either do the maximum possible size or the average size, which ever is larger. The other rows will accommodate.
+    # either do the maximum possible size or the average size, whichever is larger. The other columns will accommodate.
     wrap_to = max(
         (
             average_size,
