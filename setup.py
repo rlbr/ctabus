@@ -5,7 +5,7 @@ with open('requirements.txt') as file:
 
 setup(
     name='ctabus',
-    version='2.1.2',
+    version='2.1.3',
     description='Python package for tracking cta bus times',
     install_requires=INSTALL_REQUIRES,
     author='rlbr',

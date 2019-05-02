@@ -48,22 +48,44 @@ def create_table(list_param, datetime_format):
     return AsciiTable(rows)
 
 
+def fix_iteration(table: AsciiTable, max_width):
+    col_length = len(table.table_data[0])
+    average_size = ((max_width-1) // col_length)
+    average_size = average_size - \
+        (1 + table.padding_left + table.padding_right)
+    sizes = list(map(lambda init_size: 1 + table.padding_left +
+                     init_size + table.padding_right, table.column_widths))
+    # pick the biggest column to work on
+    sorted_sizes = sorted(
+        range(col_length), key=lambda i: sizes[i], reverse=True)
+    workon = sorted_sizes[0]
+    # either do the maximum possible size or the average size, which ever is larger. The other rows will accommodate.
+    wrap_to = max(
+        (
+            average_size,
+            (max_width-1) - table.table_width +
+            table.column_widths[workon]
+        )
+    )
+    if wrap_to > 0:
+        for row in table.table_data:
+            row[workon] = fill(row[workon], wrap_to+1)
+        return True
+    else:
+        return False
+
+
 def render_table(table: AsciiTable, interactive=True):
     '''Do all wrapping to make the table fit in screen'''
+    MAX_WIDTH = terminal_size()[0]
     table.inner_row_border = True
-    data = table.table_data
-    terminal_width = terminal_size()[0]
-    n_cols = len(data[0])
-    even_distribution = terminal_width // n_cols
-    for row_num, row in enumerate(data):
-        for col_num, col_data in enumerate(row):
-            if len(col_data) > even_distribution:
-                if col_num != n_cols - 1:
-                    data[row_num][col_num] = fill(col_data, even_distribution)
-                else:
-                    data[row_num][col_num] = ''
-                    data[row_num][col_num] = fill(
-                        col_data, table.column_max_width(col_num))
+    if not table.table_width < MAX_WIDTH:
+        non_negative = True
+        i = 0
+        while table.table_width > MAX_WIDTH and non_negative and i < 50:
+            non_negative = fix_iteration(table, MAX_WIDTH)
+            i += 1
+
     if interactive:
         pager = getpager()
         pager(table.table)
